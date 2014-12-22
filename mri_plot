@@ -1,0 +1,46 @@
+#plot mri data by lean mass, fat mass  and total mass. 
+#group individuals by genotype (as entered in the annotation field)
+
+mri_plot<-function(dir){
+	setwd(dir)
+	mri_data<-read.csv("tExtractedResults.csv")
+
+	mice<-unique(mri_data$Label)
+	gens<-unique(mri_data$Genotype)
+	empty<-rep(0,length(mice))
+	mice_data<-data.frame("Label"=mice,"Lean"=empty,"Fat"=empty,"Total"=empty,"Genotype"=rep("",length(mice)),stringsAsFactors=FALSE)
+	i=0
+	for (mouse in mice){
+		i<-i+1
+		mouse_data<-mri_data[mri_data$Label==mouse,]
+		mice_data[i,2]<-mean(mouse_data$Lean)
+		mice_data[i,3]<-mean(mouse_data$Fat)
+		mice_data[i,4]<-mean(mouse_data$Weight)
+		mice_data[i,5]<-as.character(mouse_data[1,12])
+	}
+	#names<-c()
+	lean_means<-c()
+	fat_means<-c()
+	total_means<-c()
+	lean_se<-c()
+	fat_se<-c()
+	total_se<-c()
+	for (genotype in gens){
+		g<-mice_data[mice_data$Genotype==genotype,]
+		lean_means<-c(lean_means,mean(g$Lean))
+		fat_means<-c(fat_means,mean(g$Fat))
+		total_means<-c(total_means,mean(g$Total))
+		lean_se<-c(lean_se,sd(g$Lean))
+		fat_se<-c(fat_se,sd(g$Fat))
+		total_se<-c(total_se,sd(g$Total))
+		
+	}
+	par(mfrow=c(1,3))
+	top_plot<-max(total_means+total_se*2)
+	barCenters_lean <- barplot(lean_means, names.arg=gens, col="gray", las=1,ylim=c(0,top_plot),xlab="Lean")
+	arrows(barCenters_lean, lean_means-lean_se*2, barCenters_lean, lean_means+lean_se*2, lwd=1, angle=90, code=3,length=0.1)
+	barCenters_fat <- barplot(fat_means, names.arg=gens, col="gray", las=1,ylim=c(0,top_plot),xlab="Fat")
+	arrows(barCenters_fat, fat_means-fat_se*2, barCenters_fat, fat_means+fat_se*2, lwd=1,angle=90, code=3,length=0.1)
+	barCenters_total <- barplot(total_means, names.arg=gens, col="gray", las=1,ylim=c(0,top_plot),xlab="Total")
+	arrows(barCenters_total, total_means-total_se*2, barCenters_total, total_means+total_se*2, lwd=1,angle=90, code=3,length=0.1)
+}
