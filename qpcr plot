@@ -1,0 +1,49 @@
+#http://monkeysuncle.stanford.edu/?p=485
+error.bar <- function(x, y, upper, lower=upper, length=0.1,...){
+	if(length(x) != length(y) | length(y) !=length(lower) | length(lower) != length(upper))
+	stop("vectors must be same length")
+	arrows(x,y+upper, x, y-lower, angle=90, code=3, length=length, ...)
+	}
+
+setwd("P:/data/RNA/VilCre Plate 1")
+gene_exp_data<-read.csv("VilCre_111414_expression analysis.csv")
+genes_data<-gene_exp_data[complete.cases(gene_exp_data),]
+#remove 155
+genes_data<-genes_data[genes_data[1]!=155,]
+
+genes<-unique(genes_data$Target)
+
+g<-split(genes_data,list(genes_data$Genotype,genes_data$Sex))
+
+KO.F<-data.frame(g[1])
+WT.F<-data.frame(g[2])
+KO.M<-data.frame(g[3])
+WT.M<-data.frame(g[4])
+
+cohorts<-list(KO.F,WT.F,KO.M,WT.M)
+
+m<-data.frame(matrix(NA, nrow = 4, ncol = 7))
+names(m)<-genes
+rownames(m)<-c("KO Female", "WT Female", "KO Male", "WT Male")
+s<-data.frame(matrix(NA, nrow = 4, ncol = 7))
+names(s)<-genes
+rownames(s)<-c("KO Female", "WT Female", "KO Male", "WT Male")
+
+for (gene in genes){
+	means<-c()
+	sds<-c()
+	for (cohort in cohorts){
+		group<-cohort[cohort[5]==gene,6]
+		means<-c(means,mean(group))
+		sds<-c(sds,sd(group))
+		}
+	m[gene]<-means
+	s[gene]<-sds
+	}
+c<-c("#6860BF","#1E2470","#4453FF","#111540")
+b<-barplot(as.matrix(m),beside=TRUE,legend.text=TRUE,col=c,ylim=c(0,5),main="Gene Expression in the Ileum")
+error.bar(b,as.matrix(m),as.matrix(s),length=0.01)
+
+boxplot(adjusted.fold.diff~Genotype*Sex*Target,data=genes_data,col=c,names=NULL,xaxt='n')
+axis(1,at=seq(2.5,28,4),labels=genes,cex.axis=0.7)
+legend(x=4,y=4,c(rownames(m)),fill=c)
