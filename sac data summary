@@ -1,0 +1,123 @@
+setwd("X:/New Folder 2013/Animal Matings+Inventory/High Fructose/sac data")
+
+#read data from file and add a few new parameters
+sac<-read.csv("HF Sac Data 12 18 14.csv")
+sac$Cohort<-paste(sac$Strain,sac$Diet,sep=" ")
+sac[is.na(sac)]<-0
+sac$Liver.pc.Body.Wt<-100*sac$Liver/sac$Animal.Weight.at.sac
+sac$GF.pc.Body.Wt<-100*sac$GF/sac$Animal.Weight.at.sac
+sac$Cecum.pc.Body.Wt<-100*sac$Cecum/sac$Animal.Weight.at.sac
+sac[is.na(sac)]<-0
+
+#add in weight and food intake data that's not necessarily on the sac spreadsheet
+wt_data<-read.csv("X:/New Folder 2013/Animal Matings+Inventory/High Fructose/High Fructose Census 12 18 14.csv",skip=1)
+#only animal, total weight gain and total food intake
+wt_data<-wt_data[,c(1,23,24)]
+names(wt_data)[1]<-names(sac)[1]
+
+sac<-merge(sac,wt_data,by="Animal")
+
+#define strains and interesting parameters to analyze
+strains<-unique(sac$Strain)
+##note: make the following a user input field in the future
+Params<-names(sac)[c(5,8,10,12,13,14,17,18,19,20,21)]
+
+#colours from adobe kuler
+#c<-c(rep(c("#9424B2","#DE67FF"),8),rep(c("#7AB21B","#BDFF4E"),8),rep(c("#2492B2","#67DCFF","#B26A23","#FFA64E"),7),"#67DCFF","#B26A23","#FFA64E")
+c<-c(rep("#9424B2",8),rep("#DE67FF",8),rep("#7AB21B",8),rep("#BDFF4E",8),rep("#2492B2",6),rep("#67DCFF",8),rep("#B26A23",8),rep("#FFA64E",8))
+cols<-c("#9424B2","#DE67FF","#7AB21B","#BDFF4E","#2492B2","#67DCFF","#B26A23","#FFA64E")
+
+#print t.test results on an output file
+t_test_results<-function(outfile){
+	sink(outfile,append=TRUE)
+	for (strain in strains){
+		for (var in Params){
+			t<-paste(strain,var,sep="     ")
+			print(t)
+			print(t.test(sac[var][sac$Strain==strain & sac$Diet=="NF",],sac[var][sac$Strain==strain & sac$Diet=="HF",]))
+			cat("=============================================\n")
+			cat("=============================================\n")	
+		}
+	}
+	sink()
+}
+
+#graph individuals for each cohort in a separate dot plot
+scatter_results<-function(){
+	for (var in Params){
+		filename<-paste(var,"scatter.png",sep=" ")
+		png(filename)
+		plot(as.numeric(as.factor(sac$Cohort)),c(sac[var][[1]]),pch=19,xlab=" ",ylab=var,xaxt="n",col=c)
+		axis(1,labels=levels(as.factor(sac$Cohort)),at=c(1:8),las=2,cex=0.7)
+		dev.off()
+	}
+}
+
+
+#graph means with st error as bar charts
+bar_results<-function(){
+	for (var in Params){
+		filename<-paste(var,"bar.png",sep=" ")
+		lengths<-c(8,8,8,8,6,8,8,8)
+		var_mean<-aggregate(c(sac[var][[1]]),by=list(sac$Cohort),FUN=mean)
+		var_sd<-aggregate(c(sac[var][[1]]),by=list(sac$Cohort),FUN=sd)
+		var_se<-var_sd[2]/(sqrt(lengths))
+
+		png(filename)
+		barCenters<-barplot(var_mean$x,names.arg=var_mean$Group.1,col=cols,las=1,xaxt="n",main=var,ylim=c(0,max(var_mean$x+var_se$x)))
+		arrows(barCenters,var_mean$x-var_se$x,barCenters,var_mean$x+var_se$x,lwd=1,angle=90,code=3,length=0.1)
+		axis(1,labels=var_mean$Group.1,at=barCenters,las=2,cex=0.7)
+		dev.off()
+	}
+
+}
+
+#correlation plot (heatmap)
+cor_plot<-function(){
+	sink("correlation and covariance 12 18 14.txt",append=TRUE)
+	data<-as.matrix(sac[complete.cases(sac[Params]),Params],length(Params))
+	cat("CORRELATION\n")
+	cat(cr_data<-cor(data))
+	cat("=============================================\n")
+	cat("COVARIANCE\n")
+	cat(cv_data<-cov(data))
+
+	sink()
+	#heatmap(cr_data,main="Correlation")
+	
+}
+
+#ANOVA analysis written to an output file
+anova_output<-function(){
+	sink("ANOVA results 12 18 14.txt",append=TRUE)
+	for (v in Params){
+		print(v)
+		print(summary(aov(c(sac[v][[1]])~sac$Diet*sac$Strain)))
+		}
+	sink()
+}
+
+#scatter plots of 2 variables - display correlation
+#generates figures for ALL pairs of variables in Params. 
+scatter_plots<-function(){
+	for (v1 in Params){
+		for(v2 in Params){
+			filename<-paste(v1,v2,"all animals scatter.png",sep=" ")
+			png(filename)
+			plot(c(sac[v1][[1]]),c(sac[v2][[1]]),xlab=v1,ylab=v2,pch=19,col=c)
+			abline(fit<-lm(c(sac[v2][[1]])~c(sac[v1][[1]])))
+			legend("topleft",legend=paste("R2=",format(summary(fit)$adj.r.squared, digits=4)))
+			dev.off()
+		}
+	}
+}
+
+
+#scatter_results()
+
+#bar_results()
+
+#cor_plot()
+#t_test_results("t.test 12 18 14.txt")
+
+scatter_plots()
