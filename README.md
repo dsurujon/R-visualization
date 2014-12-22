@@ -15,6 +15,7 @@ Scatter plots for every possible pair of variables generated with a linear regre
 
 Bar and dot plots summarizing each parameter for each cohort generated
 
+==============
 
 file: mri_plot    
     
@@ -22,3 +23,10 @@ file: mri_plot
 Written to quickly plot and summarize data exported from EchoMRI instruments.   
 
 The data is grouped into genotypes and the fat mass, lean mass and total mass are plotted as bar charts with error bars indicating SEM. 
+
+==============
+
+file:qpcr plot
+
+
+Summarizes relative gene expression data. The cohorts are split into genotypes and sexes. 
